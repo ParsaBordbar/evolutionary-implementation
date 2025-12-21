@@ -33,8 +33,8 @@ If additional libraries are used, they will be explicitly listed inside each pro
 ## 📚 List of Implementations
 
 - [Genetic Algorithm for Scheduling](genetic_algorithm_for_scheduling)
-- [n_queens_with_ga](n_queens_with_ga)
-- [simple_ga](simple_ga)
+- [N Queens with GA](n_queens_with_ga)
+- [Simple GA](simple_ga)
 - [Logistic Regresion ES](logistic_regresion_es)
 
 
