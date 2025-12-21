@@ -35,6 +35,7 @@ If additional libraries are used, they will be explicitly listed inside each pro
 - [Genetic Algorithm for Scheduling](genetic_algorithm_for_scheduling)
 - [n_queens_with_ga](n_queens_with_ga)
 - [simple_ga](simple_ga)
+- [Logistic Regresion ES] (logistic_regresion_es)
 
 
 ## 🚀 Usage
