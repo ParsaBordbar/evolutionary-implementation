@@ -13,8 +13,15 @@ MAZE = [
     [0, 1, 1, 1, 1, 1, 0, 0, 0, 0]
 ]
 
+# Maze Confs
 START = (0, 0)
 GOAL = (9, 9)
+
+# GP-OP Confs
+POP_SIZE = 200
+MAX_GEN = 100
+MAX_DEPTH = 4
+MAX_STEPS = 60
 
 # Move Enum
 class Direction(Enum):
