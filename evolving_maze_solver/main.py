@@ -7,9 +7,6 @@ from utils import visualize_maze, print_tree_structure
 
 
 def evolve():
-    """
-    Main genetic programming algorithm for maze solving.
-    """
     print("="*70)
     print("GENETIC PROGRAMMING MAZE SOLVER")
     print("="*70)
@@ -98,7 +95,6 @@ def evolve():
     print("="*70)
     print()
 
-    # Get best solution
     best = population[0]
     agent = evaluate(best, MAZE, START, GOAL, MAX_STEPS, return_agent=True)
     
@@ -123,11 +119,11 @@ def evolve():
     print("="*70)
     print()
 
-    # Visualization 1: Fitness progression
+    # Fitness progression
     print("Generating fitness progression graph...")
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
 
-    # Plot 1: Best and Average
+    # Best and Average
     ax1.plot(best_hist, label="Best Fitness", linewidth=2.5, marker='o', markersize=4, color='green')
     ax1.plot(avg_hist, label="Average Fitness", linewidth=2.5, marker='s', markersize=4, color='blue')
     ax1.plot(worst_hist, label="Worst Fitness", linewidth=2, linestyle='--', color='red', alpha=0.7)
@@ -142,7 +138,7 @@ def evolve():
     ax1.grid(True, alpha=0.3)
     ax1.set_yscale('log')
 
-    # Plot 2: Standard Deviation
+    # Standard Deviation
     ax2.plot(std_hist, label="Population Diversity (Std Dev)", linewidth=2.5, 
              marker='o', markersize=4, color='purple')
     ax2.set_xlabel("Generation", fontsize=12, fontweight='bold')
@@ -154,11 +150,11 @@ def evolve():
     plt.tight_layout()
     plt.show()
 
-    # Visualization 2: Maze with path
+    # Maze with path
     print("Generating maze visualization with solution path...")
     visualize_maze(MAZE, START, GOAL, agent.path)
 
-    # Summary statistics
+    # statistics
     print("\nFINAL SUMMARY")
     print("="*70)
     print(f"Total Generations Run:    {len(best_hist)}")
