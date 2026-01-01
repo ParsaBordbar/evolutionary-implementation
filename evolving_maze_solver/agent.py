@@ -1,10 +1,4 @@
 class Agent:
-    """
-    Agent that navigates the maze.
-    
-    Can attempt to move in any direction (even through walls).
-    Wall collisions are penalized in fitness, not prevented.
-    """
     def __init__(self, start):
         self.x, self.y = start
         self.steps = 0
@@ -15,8 +9,6 @@ class Agent:
             
     def move(self, direction, maze):
         """
-        Move agent in given direction.
-        
         Agent CAN move through walls, but collisions are penalized.
         Position always updates (even if moving through wall).
         """
@@ -34,7 +26,6 @@ class Agent:
         if maze[ny][nx] == 1:
             self.wall_hits += 1
 
-        # Always update position (even through walls)
         self.x, self.y = nx, ny
         self.visited.add((self.x, self.y))
         self.path.append((self.x, self.y))
