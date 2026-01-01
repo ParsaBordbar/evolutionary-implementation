@@ -9,15 +9,6 @@ from utils import visualize_maze, print_tree_structure
 def evolve():
     """
     Main genetic programming algorithm for maze solving.
-    
-    Process:
-    1. Initialize population using ramped half-and-half
-    2. For each generation:
-       - Evaluate all individuals
-       - Select best parents
-       - Create offspring via crossover and mutation
-       - Track statistics
-    3. Output results and visualizations
     """
     print("="*70)
     print("GENETIC PROGRAMMING MAZE SOLVER")
@@ -78,6 +69,13 @@ def evolve():
 
         print(f"{gen:<5} {best:<10.2f} {avg:<10.2f} {worst:<10.2f} {std:<10.2f} {status:<15}")
 
+        # DEBUG: Print first 3 trees in gen 0
+        if gen == 0:
+            print("\n[DEBUG] First 3 trees in generation 0:")
+            for i in range(min(3, len(population))):
+                print(f"\nTree {i} (fitness={population[i].fitness:.2f}):")
+                print_tree_structure(population[i].tree)
+
         # Termination condition
         if best == 0:
             print("-" * 70)
@@ -115,24 +113,6 @@ def evolve():
     print(f"Unique Cells Visited:  {len(agent.visited)}")
     print(f"Loop Count:            {agent.steps - len(agent.visited)}")
     print(f"Fitness Score:         {best.fitness:.2f}")
-    print("="*70)
-    print()
-
-    # Output solution sequence
-    print("EVOLVED SOLUTION - MOVEMENT SEQUENCE")
-    print("="*70)
-    if len(agent.path) <= 50:
-        print(f"Path ({len(agent.path)} steps):")
-        for i, pos in enumerate(agent.path):
-            print(f"  Step {i:2d}: {pos}")
-    else:
-        print(f"Path ({len(agent.path)} steps):")
-        print(f"  Start: {agent.path[0]}")
-        for i in range(1, min(10, len(agent.path))):
-            print(f"  Step {i:2d}: {agent.path[i]}")
-        print(f"  ...")
-        for i in range(max(10, len(agent.path)-5), len(agent.path)):
-            print(f"  Step {i:2d}: {agent.path[i]}")
     print("="*70)
     print()
 

@@ -32,85 +32,6 @@ class MoveNode(Node):
         return f"MOVE({self.direction.name})"
 
 
-class IfWallNearby(Node):
-    """Internal node that branches based on wall detection"""
-    def __init__(self, true_branch, false_branch):
-        self.true_branch = true_branch
-        self.false_branch = false_branch
-
-    def execute(self, agent, maze):
-        if self.wall_nearby(agent, maze):
-            self.true_branch.execute(agent, maze)
-        else:
-            self.false_branch.execute(agent, maze)
-
-    @staticmethod
-    def wall_nearby(agent, maze):
-        """Check if there's a wall in any of the 4 adjacent cells"""
-        directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
-        for dx, dy in directions:
-            nx, ny = agent.x + dx, agent.y + dy
-            # If out of bounds or wall, return True
-            if not (0 <= nx < len(maze[0]) and 0 <= ny < len(maze)):
-                return True
-            if maze[ny][nx] == 1:
-                return True
-        return False
-
-    def copy(self):
-        return IfWallNearby(self.true_branch.copy(), self.false_branch.copy())
-
-    def get_children(self):
-        return [self.true_branch, self.false_branch]
-
-    def set_child(self, index, child):
-        if index == 0:
-            self.true_branch = child
-        elif index == 1:
-            self.false_branch = child
-        else:
-            raise IndexError("Invalid child index")
-
-    def __repr__(self):
-        return f"IF_WALL({self.true_branch},{self.false_branch})"
-
-
-class IfGoalClose(Node):
-    """Internal node that branches based on distance to goal"""
-    def __init__(self, true_branch, false_branch, goal):
-        self.true_branch = true_branch
-        self.false_branch = false_branch
-        self.goal = goal
-
-    def execute(self, agent, maze):
-        if self.goal_close(agent):
-            self.true_branch.execute(agent, maze)
-        else:
-            self.false_branch.execute(agent, maze)
-
-    def goal_close(self, agent):
-        """Check if goal is within Manhattan distance of 5"""
-        distance = abs(agent.x - self.goal[0]) + abs(agent.y - self.goal[1])
-        return distance <= 5
-
-    def copy(self):
-        return IfGoalClose(self.true_branch.copy(), self.false_branch.copy(), self.goal)
-
-    def get_children(self):
-        return [self.true_branch, self.false_branch]
-
-    def set_child(self, index, child):
-        if index == 0:
-            self.true_branch = child
-        elif index == 1:
-            self.false_branch = child
-        else:
-            raise IndexError("Invalid child index")
-
-    def __repr__(self):
-        return f"IF_CLOSE({self.true_branch},{self.false_branch})"
-
-
 class Sequence(Node):
     """Internal node that executes two subtrees in sequence"""
     def __init__(self, left, right):
@@ -140,55 +61,46 @@ class Sequence(Node):
 
 
 def random_move_node():
+    """Create a random move node"""
     return MoveNode(random.choice(list(Direction)))
 
 
 def generate_tree(depth, method='grow', goal=(9, 9)):
-
+    """
+    Generate a random tree for genetic programming.
+    
+    Since we're only using MOVE and SEQUENCE nodes,
+    this creates a linear program of moves.
+    
+    Args:
+        depth: Maximum tree depth
+        method: 'grow' or 'full'
+        goal: Goal position (not used here, but kept for compatibility)
+    
+    Returns:
+        Root node of the tree
+    """
     if depth == 0:
+        # Leaf node - always a move
         return random_move_node()
     
-    if method == 'grow': # randomly choose between terminal and non-terminal nodes
+    if method == 'grow':
+        # 50% chance to terminate with a move
         if random.random() < 0.5:
             return random_move_node()
         else:
-            node_type = random.choice([IfWallNearby, IfGoalClose, Sequence])
-            if node_type == IfWallNearby:
-                return IfWallNearby(
-                    generate_tree(depth - 1, method, goal),
-                    generate_tree(depth - 1, method, goal)
-                )
-            elif node_type == IfGoalClose:
-                return IfGoalClose(
-                    generate_tree(depth - 1, method, goal),
-                    generate_tree(depth - 1, method, goal),
-                    goal
-                )
-            else:  # Sequence
-                return Sequence(
-                    generate_tree(depth - 1, method, goal),
-                    generate_tree(depth - 1, method, goal)
-                )
+            # Create a sequence
+            return Sequence(
+                generate_tree(depth - 1, method, goal),
+                generate_tree(depth - 1, method, goal)
+            )
     
-    elif method == 'full': # always create full binary trees at each level
+    elif method == 'full':
+        # Full method: always create sequences until depth 1
         if depth == 1:
-            # At leaf level, only create terminal nodes
             return random_move_node()
         else:
-            node_type = random.choice([IfWallNearby, IfGoalClose, Sequence])
-            if node_type == IfWallNearby:
-                return IfWallNearby(
-                    generate_tree(depth - 1, method, goal),
-                    generate_tree(depth - 1, method, goal)
-                )
-            elif node_type == IfGoalClose:
-                return IfGoalClose(
-                    generate_tree(depth - 1, method, goal),
-                    generate_tree(depth - 1, method, goal),
-                    goal
-                )
-            else:  # Sequence
-                return Sequence(
-                    generate_tree(depth - 1, method, goal),
-                    generate_tree(depth - 1, method, goal)
-                )
+            return Sequence(
+                generate_tree(depth - 1, method, goal),
+                generate_tree(depth - 1, method, goal)
+            )
