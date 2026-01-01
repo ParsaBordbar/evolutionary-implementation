@@ -3,7 +3,6 @@ from configs import Direction
 
 
 class Node:
-    """Base class for all tree nodes"""
     def execute(self, agent, maze):
         raise NotImplementedError
 
