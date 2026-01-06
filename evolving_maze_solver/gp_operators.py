@@ -3,33 +3,34 @@ from agent import Agent
 
 def evaluate(ind, maze, start, goal, max_steps, return_agent=False):
     """
-    Evaluate fitness of an individual.
+    Evaluate fitness using the CORRECT formula:
     
-    Since the agent has NO sensing abilities, it must learn through
-    pure sequence evolution - trial and error.
+    F = s + 2*d + 10*w + 5*l
     
-    Only solutions that actually reach the goal get fitness = 0.
-    Everything else gets harsh penalties based on distance from goal.
+    where:
+      s = steps taken
+      d = distance to goal (Manhattan distance)
+      w = wall hits
+      l = loops (steps - unique_cells_visited)
+    
+    This formula ALWAYS applies, even when goal is reached!
+    When goal reached: d=0, so F = s + 10*w + 5*l
+    Only F=0 when: optimal steps + 0 wall hits + 0 loops
     """
     agent = Agent(start)
 
-    for step_count in range(max_steps):
+    for _ in range(max_steps):
         ind.tree.execute(agent, maze)
-        
         if (agent.x, agent.y) == goal:
             break
 
-    # Calculate fitness
-    if (agent.x, agent.y) == goal:
-        # Perfect! Reached the goal
-        ind.fitness = agent.steps  # Reward shorter paths slightly
-    else:
-        # Did NOT reach goal - massive penalty
-        distance_to_goal = abs(agent.x - goal[0]) + abs(agent.y - goal[1])
-        
-        # Fitness formula: very harsh for not reaching goal
-        # This forces evolution to find actual solutions
-        ind.fitness = (max_steps * 2) + (distance_to_goal * 100) + (agent.wall_hits * 50)
+    # Always use the fitness formula
+    s = agent.steps
+    d = abs(agent.x - goal[0]) + abs(agent.y - goal[1])
+    w = agent.wall_hits
+    l = agent.steps - len(agent.visited)
+    
+    ind.fitness = s + 2*d + 10*w + 5*l
 
     if return_agent:
         return agent
@@ -41,25 +42,11 @@ def select(population):
     
     Lower fitness = higher probability of selection
     """
-    # Find max fitness
-    max_fitness = max(i.fitness for i in population)
-    min_fitness = min(i.fitness for i in population)
-    
-    # Avoid division by zero
-    if max_fitness == min_fitness:
-        return population[random.randint(0, len(population)-1)].copy()
-    
-    # Invert: higher fitness value -> lower probability
-    inverted = [max_fitness - i.fitness for i in population]
-    total = sum(inverted)
-    
-    if total <= 0:
-        return population[random.randint(0, len(population)-1)].copy()
-    
+    total = sum(1/(i.fitness + 1) for i in population)
     r = random.uniform(0, total)
     acc = 0
-    for i, ind in enumerate(population):
-        acc += inverted[i]
+    for ind in population:
+        acc += 1/(ind.fitness + 1)
         if acc >= r:
             return ind.copy()
     
@@ -100,11 +87,10 @@ def crossover(p1, p2):
 
 def mutate(ind, max_depth):
     """
-    Mutation: 15% chance to replace a random subtree with new random tree.
+    Mutation: 20% chance to replace a random subtree.
     """
-    if random.random() < 0.15:
+    if random.random() < 0.2:
         from tree_nodes import generate_tree
-        # Find a random node and replace it
         nodes = collect_nodes(ind.tree)
         if nodes:
             node, parent, idx = random.choice(nodes)

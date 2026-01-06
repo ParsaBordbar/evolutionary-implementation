@@ -19,12 +19,35 @@ def evolve():
     print()
     
     # Initialize population with ramped half-and-half
+    # IMPORTANT: Reject trees that are too good (found solution by luck)
     population = []
     print("Initializing population with ramped half-and-half method...")
-    for _ in range(POP_SIZE // 2):
-        population.append(Individual(generate_tree(MAX_DEPTH, method='grow')))
-    for _ in range(POP_SIZE // 2):
-        population.append(Individual(generate_tree(MAX_DEPTH, method='full')))
+    print("(Rejecting initial solutions to force evolution)\n")
+    
+    attempts = 0
+    max_attempts = POP_SIZE * 10  # Prevent infinite loop
+    
+    while len(population) < POP_SIZE and attempts < max_attempts:
+        attempts += 1
+        
+        # Alternate between grow and full methods
+        if len(population) < POP_SIZE // 2:
+            method = 'grow'
+        else:
+            method = 'full'
+        
+        ind = Individual(generate_tree(MAX_DEPTH, method=method))
+        evaluate(ind, MAZE, START, GOAL, MAX_STEPS)
+        
+        # Reject if fitness is too good (lucky solution)
+        # Accept fitness > 30 to ensure no accidental optimal solutions
+        if ind.fitness > 30:
+            population.append(ind)
+    
+    if len(population) < POP_SIZE:
+        print(f"Warning: Only created {len(population)}/{POP_SIZE} individuals")
+        print(f"(Maze may be easy, or rejection threshold too high)")
+    
     print(f"✓ Created {len(population)} individuals\n")
 
     best_hist = []
@@ -95,6 +118,7 @@ def evolve():
     print("="*70)
     print()
 
+    # Get best solution
     best = population[0]
     agent = evaluate(best, MAZE, START, GOAL, MAX_STEPS, return_agent=True)
     
@@ -119,11 +143,11 @@ def evolve():
     print("="*70)
     print()
 
-    # Fitness progression
+    # Visualization 1: Fitness progression
     print("Generating fitness progression graph...")
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
 
-    # Best and Average
+    # Plot 1: Best and Average
     ax1.plot(best_hist, label="Best Fitness", linewidth=2.5, marker='o', markersize=4, color='green')
     ax1.plot(avg_hist, label="Average Fitness", linewidth=2.5, marker='s', markersize=4, color='blue')
     ax1.plot(worst_hist, label="Worst Fitness", linewidth=2, linestyle='--', color='red', alpha=0.7)
@@ -138,7 +162,7 @@ def evolve():
     ax1.grid(True, alpha=0.3)
     ax1.set_yscale('log')
 
-    # Standard Deviation
+    # Plot 2: Standard Deviation
     ax2.plot(std_hist, label="Population Diversity (Std Dev)", linewidth=2.5, 
              marker='o', markersize=4, color='purple')
     ax2.set_xlabel("Generation", fontsize=12, fontweight='bold')
@@ -150,11 +174,11 @@ def evolve():
     plt.tight_layout()
     plt.show()
 
-    # Maze with path
+    # Visualization 2: Maze with path
     print("Generating maze visualization with solution path...")
     visualize_maze(MAZE, START, GOAL, agent.path)
 
-    # statistics
+    # Summary statistics
     print("\nFINAL SUMMARY")
     print("="*70)
     print(f"Total Generations Run:    {len(best_hist)}")
