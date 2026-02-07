@@ -52,6 +52,8 @@ def print_tree_structure(node, depth=0, prefix=""):
     """
     Print the tree structure in a readable format.
     
+    FIXED VERSION: Handles all node types correctly.
+    
     Args:
         node: Root node of the tree
         depth: Current depth (for indentation)
@@ -65,29 +67,50 @@ def print_tree_structure(node, depth=0, prefix=""):
     # Get node type name
     node_type = type(node).__name__
     
-    # Print current node
+    # Print current node based on type
     if node_type == "MoveNode":
         print(f"{indent}├─ MOVE({node.direction.name})")
+    
     elif node_type == "IfWallNearby":
         print(f"{indent}├─ IF_WALL_NEARBY?")
         print(f"{indent}│  ├─ IF YES:")
         print_tree_structure(node.true_branch, depth + 2, "│  ")
-        print(f"{indent}│  ├─ IF NO:")
+        print(f"{indent}│  └─ IF NO:")
         print_tree_structure(node.false_branch, depth + 2, "│  ")
+    
     elif node_type == "IfGoalClose":
         print(f"{indent}├─ IF_GOAL_CLOSE (distance ≤ 5)?")
         print(f"{indent}│  ├─ IF YES:")
         print_tree_structure(node.true_branch, depth + 2, "│  ")
-        print(f"{indent}│  ├─ IF NO:")
+        print(f"{indent}│  └─ IF NO:")
         print_tree_structure(node.false_branch, depth + 2, "│  ")
+    
     elif node_type == "Sequence":
         print(f"{indent}├─ SEQUENCE")
         print(f"{indent}│  ├─ FIRST:")
-        print_tree_structure(node.left, depth + 2, "│  ")
-        print(f"{indent}│  ├─ THEN:")
-        print_tree_structure(node.right, depth + 2, "│  ")
+        print_tree_structure(node.first, depth + 2, "│  ")  # FIXED: use .first
+        print(f"{indent}│  └─ THEN:")
+        print_tree_structure(node.second, depth + 2, "│  ")  # FIXED: use .second
+    
+    # Support for old node types (if they still exist)
+    elif node_type in ["IfWallUp", "IfWallDown", "IfWallLeft", "IfWallRight"]:
+        print(f"{indent}├─ {node_type.upper()}")
+        print(f"{indent}│  ├─ IF YES:")
+        print_tree_structure(node.true_branch, depth + 2, "│  ")
+        print(f"{indent}│  └─ IF NO:")
+        print_tree_structure(node.false_branch, depth + 2, "│  ")
+    
     else:
+        # Generic fallback for any other node type
         print(f"{indent}├─ {node_type}")
+        # Try to get children using get_children() method
+        try:
+            children = node.get_children()
+            for i, child in enumerate(children):
+                print(f"{indent}│  ├─ CHILD {i}:")
+                print_tree_structure(child, depth + 2, "│  ")
+        except (AttributeError, TypeError):
+            pass
 
 
 def print_maze_with_path(maze, start, goal, path):

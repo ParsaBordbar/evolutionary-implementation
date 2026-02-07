@@ -1,0 +1,100 @@
+Genetic Programming evolves tree-structured programs using natural selection. 
+Unlike Genetic Algorithms that evolve fixed-length strings, GP evolves programs with variable-length tree structures.
+
+
+    IfWallNearby
+    /          \
+   YES          NO
+    |            |
+  MoveUp     IfGoalClose
+            /           \
+           YES           NO
+           |             |
+        MoveRight    MoveDown
+
+
+1. INITIALIZE: Create 200 random trees (ramped half-and-half)
+   ↓
+2. EVALUATE: Run each tree in maze, calculate fitness
+   ↓
+3. SELECT: Choose best trees as parents
+   ↓
+4. BREED: Crossover + Mutation
+   ↓
+5. REPEAT: Until solution found\
+
+
+"Why use trees instead of strings?"
+
+"Trees naturally represent hierarchical programs with if-then-else logic. Genetic Algorithms use fixed-length strings which can't represent 
+variable-complexity programs. GP trees are non-linear chromosomes that can grow or shrink, allowing evolution to discover programs of any 
+complexity."
+
+"How does ramped half-and-half work?"
+
+"It creates maximum initial diversity by:
+
+1. Using different depths from 1 to 6
+2. For each depth, creating half the trees with GROW (irregular shapes) and half with FULL (balanced shapes)
+
+For example, with 200 trees and max depth 6, I create about 33 trees at each depth level, alternating between GROW and FULL methods.
+This is the textbook standard because it gives both shallow and deep trees, both bushy and irregular shapes."
+
+-------------------------------------------------------------------------------------------------------------------
+Cross Over Explanation:
+
+Parent 1:              Parent 2:
+  IF_WALL                IF_GOAL
+   /    \                 /    \
+  UP   DOWN           RIGHT   LEFT
+
+         ↓ CROSSOVER ↓
+
+Child:
+  IF_WALL
+   /    \
+  UP   IF_GOAL    ← Subtree from Parent 2!
+       /      \
+    RIGHT    LEFT
+
+
+    ALGORITHM:
+    1. Copy parent 1 to create child
+    2. Select random node in child
+    3. Select random node in parent 2
+    4. Replace child's node with parent 2's node
+    
+    "Most common recombination: exchange two randomly chosen 
+     subtrees among the parents"
+    
+    - Can create offspring larger or smaller than parents
+    - Preserves valid tree structure
+    - Highly explorative (can make big changes)
+    
+    PARAMETERS (from textbook):
+    - Probability pc to choose crossover vs mutation
+    - Probability to choose internal vs terminal node
+    
+    We use uniform selection (any node equally likely).
+-------------------------------------------------------------------------------------------------------------------
+
+    Mutation: Replace random subtree with new random tree.
+        
+    ALGORITHM:
+    1. With probability p_mut (e.g., 20%):
+    2. Select random node in tree
+    3. Replace it with newly generated random subtree
+    
+    PROPERTIES:
+    - Introduces new genetic material
+    - Helps escape local optima
+    - Maintains diversity
+    
+    PARAMETERS:
+    - Mutation rate: 20% (adjustable)
+    - Max depth for new subtree: same as initialization
+    
+    NOTE: In GP, mutation is "possible but not obligate" (Slides).
+    We use it to complement crossover.
+
+-------------------------------------------------------------------------------------------------------------------

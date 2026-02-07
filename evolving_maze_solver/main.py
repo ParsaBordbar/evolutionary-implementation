@@ -1,5 +1,5 @@
 from configs import MAX_DEPTH, MAX_GEN, MAX_STEPS, MAZE, POP_SIZE, START, GOAL
-from tree_nodes import generate_tree
+from tree_nodes import ramped_half_and_half
 from genome import Individual
 from gp_operators import evaluate, select, crossover, mutate
 import matplotlib.pyplot as plt
@@ -7,6 +7,25 @@ from utils import visualize_maze, print_tree_structure
 
 
 def evolve():
+    """
+    Main GP evolution loop.
+    
+    ALGORITHM (TEXTBOOK STANDARD):
+    1. Initialize population using ramped half-and-half
+    2. For each generation:
+       a. Evaluate all individuals
+       b. Check termination condition
+       c. Select parents
+       d. Apply genetic operators (crossover, mutation)
+       e. Create new population
+    3. Return best solution
+    
+    SELECTION SCHEME:
+    "Typical: generational scheme" (textbook)
+    - Entire population replaced each generation
+    - Maintains diversity
+    - Steady convergence
+    """
     print("="*70)
     print("GENETIC PROGRAMMING MAZE SOLVER")
     print("="*70)
@@ -18,38 +37,17 @@ def evolve():
     print("="*70)
     print()
     
-    # Initialize population with ramped half-and-half
-    # IMPORTANT: Reject trees that are too good (found solution by luck)
-    population = []
+
     print("Initializing population with ramped half-and-half method...")
-    print("(Rejecting initial solutions to force evolution)\n")
+    print("(Creates trees of varying depths using both GROW and FULL)\n")
     
-    attempts = 0
-    max_attempts = POP_SIZE * 10  # Prevent infinite loop
+    trees = ramped_half_and_half(POP_SIZE, MAX_DEPTH)
     
-    while len(population) < POP_SIZE and attempts < max_attempts:
-        attempts += 1
-        
-        # Alternate between grow and full methods
-        if len(population) < POP_SIZE // 2:
-            method = 'grow'
-        else:
-            method = 'full'
-        
-        ind = Individual(generate_tree(MAX_DEPTH, method=method))
-        evaluate(ind, MAZE, START, GOAL, MAX_STEPS)
-        
-        # Reject if fitness is too good (lucky solution)
-        # Accept fitness > 30 to ensure no accidental optimal solutions
-        if ind.fitness > 30:
-            population.append(ind)
-    
-    if len(population) < POP_SIZE:
-        print(f"Warning: Only created {len(population)}/{POP_SIZE} individuals")
-        print(f"(Maze may be easy, or rejection threshold too high)")
+    population = [Individual(tree) for tree in trees]
     
     print(f"✓ Created {len(population)} individuals\n")
 
+    # Statistics tracking
     best_hist = []
     avg_hist = []
     worst_hist = []
@@ -59,8 +57,9 @@ def evolve():
     print(f"{'Gen':<5} {'Best':<10} {'Avg':<10} {'Worst':<10} {'Std':<10} {'Status':<15}")
     print("-" * 70)
 
+
     for gen in range(MAX_GEN):
-        # Evaluate all individuals
+        # EVALUATION
         for ind in population:
             evaluate(ind, MAZE, START, GOAL, MAX_STEPS)
 
@@ -89,40 +88,47 @@ def evolve():
 
         print(f"{gen:<5} {best:<10.2f} {avg:<10.2f} {worst:<10.2f} {std:<10.2f} {status:<15}")
 
-        # DEBUG: Print first 3 trees in gen 0
+        # DEBUG: Print first tree in gen 0 to show structure
         if gen == 0:
-            print("\n[DEBUG] First 3 trees in generation 0:")
-            for i in range(min(3, len(population))):
-                print(f"\nTree {i} (fitness={population[i].fitness:.2f}):")
-                print_tree_structure(population[i].tree)
+            print(f"\n[DEBUG] Example tree from generation 0:")
+            print(f"Fitness: {population[0].fitness:.2f}")
+            print_tree_structure(population[0].tree)
+            print()
 
-        # Termination condition
+        # TERMINATION CHECK
         if best == 0:
             print("-" * 70)
             print(f"\n✓ Solution found at generation {gen}!\n")
             break
 
-        # Create new population
+
+        # "Survivor selection: Typical: generational scheme" (textbook)
         new_pop = []
+        
         while len(new_pop) < POP_SIZE:
+            # Select parents
             p1 = select(population)
             p2 = select(population)
+            
+            # Apply crossover
             child = crossover(p1, p2)
+            
+            # Apply mutation
             mutate(child, MAX_DEPTH)
+            
             new_pop.append(child)
 
         population = new_pop
 
+    # RESULTS
     print("="*70)
     print("EVOLUTION COMPLETE")
     print("="*70)
     print()
 
-    # Get best solution
     best = population[0]
     agent = evaluate(best, MAZE, START, GOAL, MAX_STEPS, return_agent=True)
     
-    # Output best solution details
     print("BEST SOLUTION STATISTICS")
     print("="*70)
     print(f"Final Position:        ({agent.x}, {agent.y})")
@@ -131,23 +137,22 @@ def evolve():
     print(f"Steps Taken:           {agent.steps}")
     print(f"Wall Hits:             {agent.wall_hits}")
     print(f"Unique Cells Visited:  {len(agent.visited)}")
-    print(f"Loop Count:            {agent.steps - len(agent.visited)}")
+    print(f"Revisit Count:         {agent.revisit_count}")
     print(f"Fitness Score:         {best.fitness:.2f}")
     print("="*70)
     print()
 
-    # Output decision tree
     print("EVOLVED DECISION TREE STRUCTURE")
     print("="*70)
     print_tree_structure(best.tree)
     print("="*70)
     print()
 
-    # Visualization 1: Fitness progression
+    # VISUALIZATION 1: Fitness progression
     print("Generating fitness progression graph...")
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
 
-    # Plot 1: Best and Average
+    # Plot 1: Fitness curves
     ax1.plot(best_hist, label="Best Fitness", linewidth=2.5, marker='o', markersize=4, color='green')
     ax1.plot(avg_hist, label="Average Fitness", linewidth=2.5, marker='s', markersize=4, color='blue')
     ax1.plot(worst_hist, label="Worst Fitness", linewidth=2, linestyle='--', color='red', alpha=0.7)
@@ -156,13 +161,13 @@ def evolve():
                       [avg_hist[i] + std_hist[i] for i in range(len(best_hist))],
                       alpha=0.2, color='blue', label='±1 Std Dev')
     ax1.set_xlabel("Generation", fontsize=12, fontweight='bold')
-    ax1.set_ylabel("Fitness Score", fontsize=12, fontweight='bold')
+    ax1.set_ylabel("Fitness Score (log scale)", fontsize=12, fontweight='bold')
     ax1.set_title("Population Fitness Progression", fontsize=14, fontweight='bold')
     ax1.legend(loc='upper right', fontsize=10)
     ax1.grid(True, alpha=0.3)
     ax1.set_yscale('log')
 
-    # Plot 2: Standard Deviation
+    # Plot 2: Diversity (Standard Deviation)
     ax2.plot(std_hist, label="Population Diversity (Std Dev)", linewidth=2.5, 
              marker='o', markersize=4, color='purple')
     ax2.set_xlabel("Generation", fontsize=12, fontweight='bold')
@@ -174,11 +179,11 @@ def evolve():
     plt.tight_layout()
     plt.show()
 
-    # Visualization 2: Maze with path
+    # VISUALIZATION 2: Maze with solution path
     print("Generating maze visualization with solution path...")
     visualize_maze(MAZE, START, GOAL, agent.path)
 
-    # Summary statistics
+    # SUMMARY
     print("\nFINAL SUMMARY")
     print("="*70)
     print(f"Total Generations Run:    {len(best_hist)}")
