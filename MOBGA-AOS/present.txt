@@ -1,0 +1,77 @@
+  Main MOBGA-AOS algorithm (Algorithm 1 from the paper)
+
+This ties everything together:
+  data → population → evolution loop → Pareto front output
+
+Parameters (from paper):
+  maxFEs = 300,000   (fitness evaluations budget)
+  N      = 100       (population size)
+  Q      = 5         (crossover operators)
+  LP     = 5         (generations between OSP updates)
+  Pc     = 0.9       (crossover rate)
+  Pm     = 1/D       (mutation rate)
+  k-NN   k=3, 3-fold CV
+
+
+  Initialize population
+    └─► _init_population()       in mobga_aos.py
+
+Evaluate population
+    └─► _evaluate()              in mobga_aos.py
+         └─► knn_cross_val_error()  in knn.py   [Equation 2]
+         └─► individual.sum()       in mobga_aos.py  [Equation 3]
+
+WHILE nFE < maxFEs:
+  FOR N/2 pairs:
+    1. Select operator     ─► aos.select_operator()       in aos.py
+    2. Select parents      ─► rng.choice()                in mobga_aos.py
+    3. Crossover           ─► apply_crossover()           in crossover.py
+    4. Mutation            ─► uniform_mutation()          in mutation.py
+    5. Evaluate children   ─► _evaluate()                 in mobga_aos.py
+    6. Credit assignment   ─► aos.credit_assignment()     in aos.py  [Algorithm 2]
+  
+  End generation          ─► aos.end_generation()         in aos.py
+  Environmental selection ─► environmental_selection()    in nsga2.py
+
+Return Pareto front
+Test set evaluation      ─► evaluate_on_test()            in evaluate.py
+
+[Done] nFE=300000  Pareto solutions: 100  Generations: 55704
+  Best train error : 11.111%
+  Fewest features  : 1
+  Time: 10216.1s  |  Pareto solutions: 100
+  Train → best_err: 11.111%  min_feat: 1
+  Test  → best_err: 33.333%  min_feat: 1
+
+
+[Done] nFE=300000  Pareto solutions: 100  Generations: 35345
+  Best train error : 11.111%
+  Fewest features  : 1
+  Time: 6497.4s  |  Pareto solutions: 100
+  Train → best_err: 11.111%  min_feat: 1
+  Test  → best_err: 33.333%  min_feat: 1
+
+
+[Done] nFE=300000  Pareto solutions: 100  Generations: 29744
+  Best train error : 5.556%
+  Fewest features  : 1
+  Time: 5423.7s  |  Pareto solutions: 100
+  Train → best_err: 5.556%  min_feat: 1
+  Test  → best_err: 33.333%  min_feat: 1
+
+  ── Summary over 3 runs ──
+  Metric                 Train mean  Train std    Test mean   Test std
+  ------------------------------------------------------------------
+  IGD                        0.1824     0.1290       0.0000     0.0000
+  HV                       145.2593     2.0951     150.0000    15.7135
+  Time (s)                   7379.1     2053.4
+
+  Final operator probabilities (averaged over runs):
+    SinglePoint          0.233  █████████
+    TwoPoint             0.205  ████████
+    Uniform              0.175  ██████
+    Shuffle              0.187  ███████
+    ReducedSurrogate     0.200  ████████
+
+  Results saved → /home/parsa/code/python/ai_learning/evolutionary-implementation/MOBGA-AOS/report/dataFrames/results_DS02.csv
+  Plot saved → /home/parsa/code/python/ai_learning/evolutionary-implementation/MOBGA-AOS/report/plots/pareto_DS02.png
